@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd services/requirements-parser
-          npm ci
+          npm install --production
 
       - name: Lint and test
         run: |
