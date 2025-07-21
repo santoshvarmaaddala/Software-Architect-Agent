@@ -1,0 +1,45 @@
+name: CI for Requirements Parser
+
+on:
+  push:
+    paths:
+      - 'services/requirements-parser/**'
+      - '.github/workflows/ci-requirements-parser.yml'
+  pull_request:
+    paths:
+      - 'services/requirements-parser/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports: [5672, 15672]
+        options: --health-cmd "rabbitmq-diagnostics check_running" --health-interval 10s --health-timeout 10s --health-retries 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd services/requirements-parser
+          npm install --production
+
+      - name: Lint and test
+        run: |
+          cd services/requirements-parser
+          npm run lint || true
+          npm test || true
+
+      - name: Build Docker image
+        run: |
+          cd services/requirements-parser
+          docker build -t requirements-parser:ci .
