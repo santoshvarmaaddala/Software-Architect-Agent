@@ -1,20 +1,20 @@
 services:
-    rabbitmq:
-      image: rabbitmq:3-management
-      container_name: rabbitmq
-      ports:
-        - "5672:5672"
-        - "15672:15672"
-      environment:
-        RABBITMQ_DEFAULT_USER: guest
-        RABBITMQ_DEFAULT_PASS: varma
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: varma
 
-    requirements_parser:
-      build:
-        context: ./services/requirements-parser
-      container_name: requirements_parser
-      depends_on:
-        - rabbitmq
-      environment:
-        RABBITMQ_URL: amqp://rabbitmq
-      restart: unless-stopped
+  requirements_parser:
+    build:
+      context: ./services/requirements-parser
+    container_name: requirements_parser
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://guest:varma@rabbitmq
+    restart: unless-stopped
