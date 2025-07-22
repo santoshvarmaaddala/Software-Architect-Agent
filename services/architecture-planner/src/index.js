@@ -1,6 +1,7 @@
 const { createChannelWithRetry } = require('./rabbitmq');
 const { generateArchitecture } = require('./planner');
 
+
 async function start() {
   const inQueue = process.env.IN_QUEUE || 'requirement.analysis.completed';
   const outQueue = process.env.OUT_QUEUE || 'architecture.planned';
@@ -12,6 +13,7 @@ async function start() {
       try {
         const requirements = JSON.parse(msg.content.toString());
         const archSpec = await generateArchitecture(requirements);
+        console.log(archSpec)
 
         // (Optional) Validate output here
         // publish downstream

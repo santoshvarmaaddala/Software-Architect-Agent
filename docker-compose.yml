@@ -18,3 +18,14 @@ services:
     environment:
       RABBITMQ_URL: amqp://guest:varma@rabbitmq
     restart: unless-stopped
+
+  architecture_planner:
+    build:
+      context: ./services/architecture-planner
+    container_name: architecture_planner
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://guest:varma@rabbitmq
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}   # Set in .env or host machine
+    restart: unless-stopped

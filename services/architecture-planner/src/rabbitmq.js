@@ -1,4 +1,4 @@
-const amqp = require('amqp');
+const amqp = require('amqplib');
 
 async function createChannelWithRetry(queue, attempts = 10, delay = 3000) {
     for (let i = 0; i < 10; i++) {
@@ -8,7 +8,7 @@ async function createChannelWithRetry(queue, attempts = 10, delay = 3000) {
             await ch.assertQueue(queue, {durable : true});
             return ch;
         } catch {
-            console.log(`Waiting for RabbitMQ... retry ${i+1}/${attempts}`);
+            console.log(`Waiting for RabbitMQ... retry (${i+1}/${attempts})`);
             await new Promise(res => setTimeout(res, delay));
         } 
     }
