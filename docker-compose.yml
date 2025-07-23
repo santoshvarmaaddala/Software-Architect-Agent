@@ -27,5 +27,5 @@ services:
       - rabbitmq
     environment:
       RABBITMQ_URL: amqp://guest:varma@rabbitmq
-      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}   # Set in .env or host machine
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}   # Set in .env or host machine
     restart: unless-stopped

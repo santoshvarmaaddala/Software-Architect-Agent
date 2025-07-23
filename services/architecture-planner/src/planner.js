@@ -1,87 +1,43 @@
 const axios = require('axios');
 
 /**
- * Parse lines grouped under a title (like Components, Flows, Patterns).
- * */
-function extractSection(content, sectionTitle) {
-  const sectionRegex = new RegExp(`${sectionTitle}[^\n]*\\n([\\s\\S]+?)(\\n\\S|\\n*$)`);
-  const match = content.match(sectionRegex);
-  if (!match) return null;
-
-  const block = match[1]
-    .trim()
-    .split('\n')
-    .map(line => line.trim().replace(/^[-•*]\s*/, ''));
-
-  return block;
-}
-
-/**
- * Try parsing architecture list blocks and building structured output.
- */
-function manualParseArchitecture(rawText) {
-  const componentsRaw = extractSection(rawText, 'Components');
-  const patternsRaw = extractSection(rawText, 'Patterns');
-  const flowsRaw = extractSection(rawText, 'Flows');
-  const techStackRaw = extractSection(rawText, 'Tech Stack');
-
-  const toParsedArray = (rawList) => (rawList || []).map(item => {
-    try {
-      return JSON.parse(item);
-    } catch {
-      return null;
-    }
-  }).filter(Boolean);
-
-  return {
-    components: toParsedArray(componentsRaw),
-    patterns: (patternsRaw || []).map(p => p.replace(/^"|"$/g, '')),
-    flows: toParsedArray(flowsRaw),
-    tech_stack: (techStackRaw || []).map(p => p.replace(/^"|"$/g, ''))
-  };
-}
-
-/**
- * Prompt Perplexity for architecture -- allow markdown blocks.
+ * Generates an architecture plan given requirements, using the Qwen model on OpenRouter.
+ * Returns a fully structured architecture object.
  */
 async function generateArchitecture(requirements) {
   const prompt = `
-You're an expert software architect.
+You are an expert software architect.
 
-Given the following functional, non-functional requirements, entities, and constraints:
+Given the following software system requirements:
 ${JSON.stringify(requirements, null, 2)}
 
-Return structured software architecture plan divided into sections:
+Create a software architecture plan in valid JSON format with the structure:
+{
+  "components": [{ "name": "string", "type": "string" }],
+  "patterns": ["string"],
+  "flows": [{ "from": "string", "to": "string", "via": "string" }],
+  "tech_stack": ["string"]
+}
 
-Components:
-- { "name": "User Service", "type": "microservice" }
-
-Patterns:
-- "Event-Driven"
-- "CQRS"
-
-Flows:
-- { "from": "User", "to": "API Gateway", "via": "HTTPS" }
-
-Tech Stack:
-- "Node.js"
-- "RabbitMQ"
-- "PostgreSQL"
-
-Please structure each section clearly with dashes, and only include one JSON object per line where applicable.
+Return only the JSON. Do NOT include explanations or markdown.
 `;
-
+  
   try {
     const response = await axios.post(
-      'https://api.perplexity.ai/chat/completions',
+      'https://openrouter.ai/api/v1/chat/completions',
       {
-        model: 'sonar-reasoning-pro',
-        messages: [{ role: 'user', content: prompt }],
+        model: 'qwen/qwen3-235b-a22b-07-25:free',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
         max_tokens: 1500
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           'Content-Type': 'application/json'
         }
       }
@@ -90,21 +46,37 @@ Please structure each section clearly with dashes, and only include one JSON obj
     const content = response?.data?.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error('No content from AI.');
+      throw new Error('No content returned from OpenRouter.');
     }
 
-    console.log("📩 Raw response (markdown style):\n", content.slice(0, 500));
-    const parsed = manualParseArchitecture(content);
+    // Log for debugging
+    console.log('🧠 Raw model output:', content.slice(0, 200) + '...');
 
-    // Basic check
-    if (!parsed.components || !parsed.patterns) {
-      throw new Error('Parsed architecture is incomplete');
+    // Qwen is consistent — typically returns clean JSON you can safely parse
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (err) {
+      // If JSON.parse fails, log for diagnosis
+      console.error('❌ JSON parse error:', err.message);
+      console.error('🔍 Full output:', content);
+      throw new Error('Invalid JSON received from Qwen model.');
+    }
+
+    // Optional: Validate required sections
+    if (
+      !parsed.components ||
+      !parsed.patterns ||
+      !parsed.flows ||
+      !parsed.tech_stack
+    ) {
+      throw new Error('Parsed JSON missing required architecture fields.');
     }
 
     return parsed;
 
   } catch (error) {
-    console.error("❌ Fallback parsing failed:", error.message);
+    console.error('❌ Error in generateArchitecture:', error.message);
     throw error;
   }
 }

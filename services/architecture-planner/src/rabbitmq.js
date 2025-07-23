@@ -9,6 +9,7 @@ async function createChannelWithRetry(queue, attempts = 10, delay = 3000) {
             return ch;
         } catch {
             console.log(`Waiting for RabbitMQ... retry (${i+1}/${attempts})`);
+            
             await new Promise(res => setTimeout(res, delay));
         } 
     }
