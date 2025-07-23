@@ -1,0 +1,12 @@
+{
+  "name": "diagram-generator",
+  "version": "1.0.0",
+  "description": "Service that generates Mermaid.js code from architecture JSON",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.3"
+  }
+}

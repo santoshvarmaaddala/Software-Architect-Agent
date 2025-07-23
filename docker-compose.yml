@@ -29,3 +29,13 @@ services:
       RABBITMQ_URL: amqp://guest:varma@rabbitmq
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}   # Set in .env or host machine
     restart: unless-stopped
+
+  diagram_generator:
+    build: 
+      context: ./services/diagram-generator
+    container_name: diagram_generator
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://guest:varma@rabbitmq
+    restart: unless-stopped
