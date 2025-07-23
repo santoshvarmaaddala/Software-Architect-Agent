@@ -1,33 +1,31 @@
-// Import helper to connect to RabbitMQ
 const { createChannelWithRetry } = require('./rabbitmq');
-
-// Import the NLP logic from parser.js
 const { parseRequirements } = require('./parser');
 
-// Main async function that runs your service
 async function start() {
-  const inQueue = 'requirement.submitted';     // Queue to listen for messages
-  const outQueue = 'requirement.parsed'; ``      // Queue to publish results
-  const channel = await createChannelWithRetry(inQueue); // Opens channel and asserts queue exists
-  await channel.assertQueue(outQueue, { durable: true });
+  const inQueue = process.env.IN_QUEUE || 'requirement.submitted';
+  const outQueue = process.env.OUT_QUEUE || 'requirement.analysis.completed';
 
+  const ch = await createChannelWithRetry(inQueue);
 
-  // Start consuming messages from input queue
-  await channel.consume(inQueue, msg => {
-    if (msg !== null) {
-      const inputText = msg.content.toString();              // Convert message buffer to string
-      const parsed = parseRequirements(inputText);           // Run NLP parsing
-      console.log('✅ Parsed Requirements:', parsed);         // Log result
+  ch.consume(inQueue, async (msg) => {
+    if (!msg) return;
 
-      // Send result to the output queue
-      channel.sendToQueue(outQueue, Buffer.from(JSON.stringify(parsed)), { persistent: true });
+    try {
+      const text = msg.content.toString();
+      const parsed = await parseRequirements(text);
 
-      channel.ack(msg);   // Acknowledge we successfully processed the message
+      await ch.assertQueue(outQueue, { durable: true });
+      ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(parsed)), { persistent: true });
+
+      console.log("✅ Published parsed requirements to", outQueue);
+      ch.ack(msg);
+
+    } catch (err) {
+      console.error("❌ Parser error:", err.message);
     }
-  }, { noAck: false });   // Require manual acknowledgment to avoid message loss on crash
+  });
 
-  console.log(`📦 Requirements Parser is listening on ${inQueue}`);
+  console.log(`📥 Listening to ${inQueue} and publishing to ${outQueue}`);
 }
 
-// Entry point
 start();
