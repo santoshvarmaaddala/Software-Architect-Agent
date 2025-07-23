@@ -1,11 +1,22 @@
 function createMermaidDiagram(architecture) {
-    const header = "graph TD";
+  const lines = ['graph TD'];
 
-    const nodes = architecture.components.map(component => `"${component.name}"[${component.type}]`).join('\n');
+  // Generate component nodes
+  for (const component of architecture.components) {
+    const name = component.name.replace(/\s+/g, '_');       // Replace spaces with _
+    const label = component.type || 'component';            // Fallback type
+    lines.push(`    ${name}[${label}]`);
+  }
 
-    const edges = architecture.flows.map(flow =>`"${flow.from}" -->|"${flow.via}"| "${flow.to}"`).join('\n');
-
-    return `${header}\n${nodes}\n${edges}`;
+  // Generate flows (connections)
+  for (const flow of architecture.flows) {
+    const from = flow.from.replace(/\s+/g, '_');
+    const to = flow.to.replace(/\s+/g, '_');
+    const via = flow.via || 'calls';
+    lines.push(`    ${from} -->|${via}| ${to}`);
+  }
+  
+  return lines.join('\n');
 }
 
-module.exports = {createMermaidDiagram}
+module.exports = { createMermaidDiagram };

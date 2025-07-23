@@ -23,7 +23,7 @@ async function start() {
       await ch.assertQueue(outQueue, { durable: true });
       ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(output)), { persistent: true });
 
-      console.log('✅ Diagram code generated and sent to', outQueue);
+      console.log('✅ Diagram code generated and sent to', outQueue);+
       ch.ack(msg);
 
     } catch (err) {
