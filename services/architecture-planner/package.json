@@ -1,0 +1,14 @@
+{
+  "name": "architecture-planner",
+  "version": "1.0.0",
+  "description": "Service to produce specifications for software desinn",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "compromise": "^13.11.3",
+    "axios": "1.10.0"
+  }
+}

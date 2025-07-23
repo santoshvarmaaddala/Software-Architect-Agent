@@ -7,7 +7,7 @@ const { parseRequirements } = require('./parser');
 // Main async function that runs your service
 async function start() {
   const inQueue = 'requirement.submitted';     // Queue to listen for messages
-  const outQueue = 'requirement.parsed';       // Queue to publish results
+  const outQueue = 'requirement.parsed'; ``      // Queue to publish results
   const channel = await createChannelWithRetry(inQueue); // Opens channel and asserts queue exists
   await channel.assertQueue(outQueue, { durable: true });
 
