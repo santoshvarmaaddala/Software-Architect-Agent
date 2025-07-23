@@ -32,10 +32,10 @@ services:
 
   diagram_generator:
     build: 
-      context: ./services/diagram_generator
+      context: ./services/diagram-generator
     container_name: diagram_generator
     depends_on:
       - rabbitmq
     environment:
-      - RABBITMQ_URL: amqp://guest:varma@rabbitmq
+      RABBITMQ_URL: amqp://guest:varma@rabbitmq
     restart: unless-stopped
