@@ -39,3 +39,18 @@ services:
     environment:
       RABBITMQ_URL: amqp://guest:varma@rabbitmq
     restart: unless-stopped
+
+  
+  api_gateway:
+    build: 
+      context: ./services/api-gateway
+    container_name: api_gateway
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://guest:varma@rabbitmq:5672
+      IN_QUEUE: requirement.submitted
+      OUT_QUEUE: requirement.analysis.completed
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
