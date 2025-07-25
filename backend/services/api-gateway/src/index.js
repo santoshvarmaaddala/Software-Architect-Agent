@@ -2,8 +2,12 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const {createChannelWithRetry} = require("./rabbitmq");
 const createRoutes = require("./router");
+const cors = require('cors');
+
 
 const app = express();
+
+app.use(cors())
 
 app.use(bodyParser.json())
 
