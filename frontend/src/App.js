@@ -1,101 +1,141 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { getSessionId } from "./utils";
 import MermaidDiagramGenrator from "./Mermaid";
+import { IoSunnyOutline } from "react-icons/io5";
+import { FiMoon } from "react-icons/fi";
 
-export default function App() {
-  const [prompt, setPrompt] = useState("");
-  const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
+function App() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
   const [theme, setTheme] = useState("light");
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  // On mount: load theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "light";
     setTheme(savedTheme);
-    const html = document.getElementById("htmlRoot");
-    if (savedTheme === "dark") {
-      html.classList.add("dark");
-    } else {
-      html.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", savedTheme === "dark");
   }, []);
 
-  // Toggle between dark and light theme
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
-    const html = document.getElementById("htmlRoot");
-    html.classList.toggle("dark", newTheme === "dark");
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
-  // Handle prompt submission
-  const handleSubmit = async (e) => {
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const getSessionId = () => "mock-session-id"; // Replace if needed
+
+  const sendMessage = async (e) => {
     e.preventDefault();
+    if (!input.trim()) return;
+
+    const userMessage = { role: "user", content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setLoading(true);
-    const sessionId = getSessionId();
+
     try {
       const res = await axios.post("http://localhost:4000/api/submit-prompt", {
-        prompt,
-        sessionId,
+        prompt: input,
+        sessionId: getSessionId(),
       });
-      setResult(res.data);
-    } catch (err) {
-      console.error("Failed to generate diagram:", err);
-      setResult({ mermaid: "error" });
+
+      const aiMessage = {
+        role: "ai",
+        content: res.data.mermaid || "No valid response received.",
+        isDiagram: res.data.mermaid && res.data.mermaid.startsWith("graph"),
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: "Error generating diagram." },
+      ]);
     }
+
     setLoading(false);
   };
 
   return (
-    <div 
-        key={theme}
-        className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-green-600 dark:text-blue-400">
+    <div
+      key={theme}
+      className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300"
+    >
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold text-green-600 dark:text-blue-400">
             Architecture Playground
-            </h1>
+          </h1>
           <button
             onClick={toggleTheme}
-            className="bg-gray-200 dark:bg-gray-800 text-sm text-gray-800 dark:text-gray-100 px-4 py-2 rounded-lg hover:opacity-90 transition"
+            className="bg-gray-200 dark:bg-gray-800 p-2 rounded-full hover:opacity-90"
+            title="Toggle Theme"
           >
-            {theme === "dark" ? "🌞 Light Mode" : "🌙 Dark Mode"}
+            {theme === "dark" ? <IoSunnyOutline /> : <FiMoon />}
           </button>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-6 space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label className="block text-lg font-medium">Enter Prompt</label>
-            <textarea
-              className="w-full h-40 p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 resize-none"
-              placeholder="Describe the architecture..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition"
+        {/* Chat area */}
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-xl p-4 space-y-4 h-[70vh] overflow-y-auto">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
             >
-              {loading ? "Generating..." : "Generate Diagram"}
-            </button>
-          </form>
-
-          {result?.mermaid && result.mermaid !== "error" && (
-            <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
-              <h2 className="text-xl font-semibold mb-2">Generated Diagram</h2>
-              <div className="bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded-md p-4 overflow-auto">
-                <MermaidDiagramGenrator code={result.mermaid} />
+              <div
+                className={`max-w-[75%] px-4 py-2 rounded-lg ${
+                  msg.role === "user"
+                    ? "bg-blue-600 text-white rounded-br-none"
+                    : "bg-gray-300 dark:bg-gray-700 text-black dark:text-white rounded-bl-none"
+                }`}
+              >
+                {msg.isDiagram ? (
+                  <MermaidDiagramGenrator code={msg.content} />
+                ) : (
+                  <pre className="whitespace-pre-wrap">{msg.content}</pre>
+                )}
               </div>
             </div>
+          ))}
+          {loading && (
+            <div className="text-sm text-gray-400">AI is typing...</div>
           )}
-
-          {result?.mermaid === "error" && (
-            <p className="text-red-500 font-medium">Something went wrong. Please try again.</p>
-          )}
+          <div ref={messagesEndRef} />
         </div>
+
+        {/* Input box */}
+        <form onSubmit={sendMessage} className="mt-4 flex gap-2">
+          <textarea
+            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm resize-none"
+            rows={2}
+            placeholder="Ask about your system architecture..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            Send
+          </button>
+        </form>
       </div>
     </div>
   );
 }
+
+export default App;
