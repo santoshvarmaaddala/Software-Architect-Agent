@@ -1,7 +1,6 @@
 const { createChannelWithRetry } = require('./rabbitmq');
 const { generateArchitecture } = require('./planner');
 
-
 async function start() {
   const inQueue = process.env.IN_QUEUE || 'requirement.analysis.completed';
   const outQueue = process.env.OUT_QUEUE || 'architecture.planned';
@@ -11,20 +10,20 @@ async function start() {
   ch.consume(inQueue, async (msg) => {
     if (msg) {
       try {
-        const requirements = JSON.parse(msg.content.toString());
+        const { requirements, jobId } = JSON.parse(msg.content.toString());
         const archSpec = await generateArchitecture(requirements);
-        console.log(archSpec)
 
-        // (Optional) Validate output here
-        // publish downstream
+        // Add jobId to output
+        const messageOut = { ...archSpec, jobId };
+
         await ch.assertQueue(outQueue, { durable: true });
-        ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(archSpec)), { persistent: true });
+        ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(messageOut)), { persistent: true });
 
-        console.log("✅ Published architecture spec:", archSpec);
+        console.log("✅ Published architecture spec:", messageOut);
         ch.ack(msg);
       } catch (err) {
         console.error("❌ Error processing message:", err.message);
-        // Optionally: ch.nack(msg, false, false); // Dead-letter
+        // Optionally: ch.nack(msg, false, false);
       }
     }
   });

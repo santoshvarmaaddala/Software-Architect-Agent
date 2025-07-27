@@ -11,21 +11,43 @@ async function start() {
     if (!msg) return;
 
     try {
-      const text = msg.content.toString();
+      // Parse incoming message JSON to extract prompt and metadata
+      const msgObj = JSON.parse(msg.content.toString());
+
+      // Extract required fields:
+      // Adapt 'prompt' depending on your input schema. Could also be 'text' or similar.
+      const text = msgObj.prompt || msgObj.text || "";
+      const jobId = msgObj.jobId;
+      const sessionId = msgObj.sessionId; // Optional - forward if needed
+
+      // Parse the requirements using your parser function
       const parsed = await parseRequirements(text);
 
-      await ch.assertQueue(outQueue, { durable: true });
-      ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(parsed)), { persistent: true });
+      // Construct the outgoing message, including jobId and sessionId for tracking
+      const messageOut = {
+        ...parsed,    // Parsed requirements JSON
+        jobId,
+        sessionId     // Include sessionId if used downstream
+      };
 
-      console.log("✅ Published parsed requirements to", outQueue);
+      // Ensure the output queue exists
+      await ch.assertQueue(outQueue, { durable: true });
+
+      // Send the message downstream with jobId preserved
+      ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(messageOut)), { persistent: true });
+
+      console.log(`✅ Published parsed requirements to "${outQueue}" for jobId: ${jobId}`);
+
+      // Acknowledge message consumption
       ch.ack(msg);
 
     } catch (err) {
       console.error("❌ Parser error:", err.message);
+      // Optionally: ch.nack(msg, false, false); // Send to dead-letter queue if configured
     }
   });
 
-  console.log(`📥 Listening to ${inQueue} and publishing to ${outQueue}`);
+  console.log(`📥 Listening on queue "${inQueue}" and publishing to "${outQueue}"`);
 }
 
 start();
