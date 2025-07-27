@@ -47,10 +47,20 @@ services:
     container_name: api_gateway
     depends_on:
       - rabbitmq
+      - redis
     environment:
       RABBITMQ_URL: amqp://guest:varma@rabbitmq:5672
       IN_QUEUE: requirement.submitted
       OUT_QUEUE: requirement.analysis.completed
     ports:
       - "4000:4000"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      -"6379:6379"
+    environment:
+      REDIS_URL: redis://redis:6379
     restart: unless-stopped
