@@ -4,7 +4,6 @@ const {createChannelWithRetry} = require("./rabbitmq");
 const createRoutes = require("./router");
 const cors = require('cors');
 
-
 const app = express();
 
 app.use(cors())

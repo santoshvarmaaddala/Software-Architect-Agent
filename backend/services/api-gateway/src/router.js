@@ -1,6 +1,10 @@
 const express = require("express");
 const router = express.Router();
 
+const redisClient = createClient({ url: process.env.REDIS_URL || 'redis://redis:6379' });
+redisClient.connect();
+
+
 module.exports = (channel, IN_QUEUE) => {
 
     router.post("/submit-prompt", async(req, res) => {
@@ -23,9 +27,20 @@ module.exports = (channel, IN_QUEUE) => {
         }
     });
 
+    // GET /get-result?jobId=...
     router.get('/get-result', async (req, res) => {
-        res.status(501).json({error: 'Not implemented yet. '});
+        const jobId = req.query.jobId;
+        if (!jobId) return res.status(400).json({ error: 'jobId required' });
+
+        const result = await redisClient.get(jobId);
+        if (result) {
+        res.json(JSON.parse(result)); // Returns { mermaid, architecture, status }
+        } else {
+        res.status(202).json({ status: 'pending' }); // Not ready yet
+        }
     });
 
+
+    
     return router;
 }

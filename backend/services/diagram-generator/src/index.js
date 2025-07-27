@@ -1,5 +1,10 @@
 const { createChannelWithRetry } = require('./rabbitmq');
 const { createMermaidDiagram } = require('./diagrammer');
+const { createClient } = require("redis")
+
+const redisClient = createClient({ url: process.env.REDIS_URL || "redis://redis:6379"});
+
+redisClient.connect();
 
 async function start() {
   const inQueue = process.env.IN_QUEUE || 'architecture.planned';
@@ -11,24 +16,18 @@ async function start() {
     if (!msg) return;
 
     try {
-      const architecture = JSON.parse(msg.content.toString());
-      const mermaidCode = createMermaidDiagram(architecture);
+      const { architecture, jobId } = JSON.parse(msg.content.toString());
+      const mermaid = createMermaidDiagram(architecture);
 
-      const output = {
-        architecture,
-        mermaid: mermaidCode,
-        generatedAt: new Date().toISOString()
-      };
+      // Save result to Redis with expiration (e.g., 1 day)
+      await redisClient.setEx(jobId, 86400, JSON.stringify({ mermaid, architecture, status: 'done' }));
 
-      await ch.assertQueue(outQueue, { durable: true });
-      ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(output)), { persistent: true });
-
-      console.log('✅ Diagram code generated and sent to', outQueue);+
       ch.ack(msg);
-
+      console.log('✅ Diagram code saved to Redis for', jobId);
     } catch (err) {
-      console.error('❌ Error generating diagram:', err.message);
-      ch.nack(msg, false, false); // Optionally send to dead-letter queue
+      console.error('❌ Diagram generation failed:', err.message);
+      ch.nack(msg, false, false);
+
     }
   });
 
