@@ -5,6 +5,10 @@ const axios = require('axios');
  * Returns a fully structured architecture object.
  */
 async function generateArchitecture(requirements) {
+  if (!requirements) {
+    console.error("Error in requirements parameters in planner");
+    return;
+  }
   const prompt = `
 You are an expert software architect.
 
@@ -42,6 +46,8 @@ Return only the JSON. Do NOT include explanations or markdown.
         }
       }
     );
+
+    console.log("requirments: ", requirements, response.data)
 
     const content = response?.data?.choices?.[0]?.message?.content;
 

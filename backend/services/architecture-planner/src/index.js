@@ -12,7 +12,7 @@ async function start() {
       try {
         const { requirements, jobId } = JSON.parse(msg.content.toString());
         const archSpec = await generateArchitecture(requirements);
-
+        
         // Add jobId to output
         const messageOut = { ...archSpec, jobId };
 

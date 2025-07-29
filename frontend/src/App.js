@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import MermaidDiagramGenrator from "./Mermaid";
+import MermaidDiagramGenrator from "./components/Mermaid";
 import { IoSunnyOutline } from "react-icons/io5";
 import { FiMoon } from "react-icons/fi";
 

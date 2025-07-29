@@ -25,10 +25,13 @@ async function start() {
 
       // Construct the outgoing message, including jobId and sessionId for tracking
       const messageOut = {
-        ...parsed,    // Parsed requirements JSON
+        requirements: {
+          ...parsed
+        },
         jobId,
-        sessionId     // Include sessionId if used downstream
+        sessionId
       };
+
 
       // Ensure the output queue exists
       await ch.assertQueue(outQueue, { durable: true });
@@ -36,7 +39,6 @@ async function start() {
       // Send the message downstream with jobId preserved
       ch.sendToQueue(outQueue, Buffer.from(JSON.stringify(messageOut)), { persistent: true });
 
-      console.log(`✅ Published parsed requirements to "${outQueue}" for jobId: ${jobId}`);
 
       // Acknowledge message consumption
       ch.ack(msg);
