@@ -3,6 +3,7 @@ import axios from "axios";
 import MermaidDiagramGenrator from "./components/Mermaid";
 import { IoSunnyOutline } from "react-icons/io5";
 import { FiMoon } from "react-icons/fi";
+import MermaidWithCDN from "./components/Mermaid";
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -10,6 +11,13 @@ function App() {
   const [theme, setTheme] = useState("light");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+  const dummyMermaid = `
+    graph TD
+      A[User] -->|Sends Request| B[API Gateway]
+      B --> C[Microservice 1]
+      B --> D[Microservice 9]
+    `;
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "light";
@@ -134,6 +142,10 @@ function App() {
           </button>
         </form>
       </div>
+      <div>
+        <h2>Dummy Mermaid Diagram Test</h2>
+        <MermaidWithCDN code={dummyMermaid} />
+    </div>
     </div>
   );
 }
